@@ -1,79 +1,43 @@
 variables:
+  MINICONDA: https://repo.anaconda.com/miniconda/Miniconda3-4.6.14-Linux-x86_64.sh
+  WSI_CONDA_CHANNEL: https://dnap.cog.sanger.ac.uk/npg/conda/devel/generic
   CONDA_IMAGE: wsinpg/ub-12.04-conda:latest
   S3_URL: https://cog.sanger.ac.uk/
-  CHANNEL_REM: s3://mk35/conda/devel/generic
-  CHANNEL_DIR: ~/tmp/devel/generic
-  BUILD_DIR: ~/tmp/conda_artefacts
-  COMPARE_BRANCH: master
+  CHANNEL_REM: s3://mk35/conda/devel/generic # needs changing
+  CHANNEL_DIR: $HOME/tmp/devel/generic
+  BUILD_DIR: $HOME/tmp/conda_artefacts
+  COMPARE_BRANCH: master # needs changing
+  
 
 before_script:
   - cd $CI_PROJECT_DIR
-
+  - . ~/miniconda/etc/profile.d/conda.sh
+  - conda activate base
 
 setup:
   stage: .pre
+
+  before_script:
+    - cd $CI_PROJECT_DIR
+
   script:
-    - mkdir -p $CHANNEL_DIR
-    - mkdir -p $BUILD_DIR
-
-install:
-  stage: .pre
-  script:
-    - wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-4.6.14-Linux-x86_64.sh -O ~/miniconda.sh
-    - /bin/bash ~/miniconda.sh -b -p ~/miniconda
-    - ~/miniconda/bin/conda clean -tipsy
-    - echo ". ~/miniconda/etc/profile.d/conda.sh" >> ~/.bashrc
-    - echo "conda activate base" >> ~/.bashrc
-    - . ~/miniconda/etc/profile.d/conda.sh
-    - conda activate base
-    - conda config --set auto_update_conda False
-    - conda config --prepend channels "$WSI_CONDA_CHANNEL"
-    - conda config --append channels conda-forge
-
-    - pip install -r ./tools/requirements.txt
-    - pip install awscli-plugin-endpoint
-
-    - aws configure set plugins.endpoint awscli_plugin_endpoint
-    - aws configure set s3.endpoint_url $S3_URL
-    - aws configure set s3api.endpoint_url $S3_URL
-    - echo $CHANNEL
-    - echo $CHANNEL_DIR
-    - cp -r /home/ubuntu/.aws ~/.aws
-    - aws s3 sync "$CHANNEL" "$CHANNEL_DIR"
-  
+    - scripts/gitlab_setup.sh
+    
 build:
   stage: build
-  script:
-    - cp $CHANNEL_DIR $BUILD_DIR
-    - >
-      ./tools/bin/recipebook
-      --changes $COMPARE_BRANCH
-      recipes |
-      ./tools/bin/build
-      --recipes-dir .
-      --artefacts-dir $BUILD_DIR 
-      --conda_build_image $CONDA_IMAGES
-      --remove_container
-    
-    - >
-      ./tools/bin/recipebook
-      --changes $COMPARE_BRANCH
-      red_recipes |
-      ./tools/bin/build
-      --recipes-dir .
-      --artefacts-dir $BUILD_DIR 
-      --conda_build_image $CONDA_IMAGES
-      --remove_container
 
+  script:
+    - scripts/gitlab_build.sh
+    
 deploy:
   stage: deploy
-  script:
-    - cp $BUILD_DIR/linux_64/*.tar.bz2 $CHANNEL_DIR/linux_64/
-    - conda index $CHANNEL_DIR
-    - aws s3 sync --acl public-read --acl bucket-owner-full-control --exclude '*/.cache/*' $CHANNEL_DIR $CHANNEL
 
-after_script:
-  - rm -rf ~/tmp
-  - rm -rf ~/miniconda*
-  - rm -rf ~/.aws
-  - rm ~/.bashrc
+  script:
+    - scripts/gitlab_deploy.sh
+
+remove_files:
+  stage: .post
+  when: always
+
+  script:
+    - scripts/gitlab_teardown.sh
