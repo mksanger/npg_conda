@@ -2,6 +2,8 @@
 
 set -e -u -x
 
-cp $BUILD_DIR/linux_64/*.tar.bz2 $CHANNEL_DIR/linux_64/
-conda index $CHANNEL_DIR
-aws s3 sync --acl public-read --acl bucket-owner-full-control --exclude '*/.cache/*' $CHANNEL_DIR $CHANNEL
+rsync -av --include='*.tar.bz2' --exclude='*' $BUILD_DIR/linux-64/ $CHANNEL_DIR/generic/linux-64/
+
+conda index $CHANNEL_DIR/generic
+
+aws s3 sync --acl public-read --acl bucket-owner-full-control --exclude '*/.cache/*' $CHANNEL_DIR/generic $CHANNEL_REM

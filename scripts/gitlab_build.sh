@@ -2,13 +2,14 @@
 
 set -e -u -x
 
+git fetch origin $COMPARE_BRANCH
 
-cp $CHANNEL_DIR $BUILD_DIR
+rsync -av $CHANNEL_DIR/generic/ $BUILD_DIR
 
-./tools/bin/recipebook --changes $COMPARE_BRANCH recipes |
-  ./tools/bin/build --recipes-dir . --artefacts-dir $BUILD_DIR \ 
-  --conda_build_image $CONDA_IMAGES --remove_container
-    
-./tools/bin/recipebook --changes $COMPARE_BRANCH red_recipes |
-  ./tools/bin/build --recipes-dir . --artefacts-dir $BUILD_DIR \ 
-  --conda_build_image $CONDA_IMAGES --remove_container
+./tools/bin/recipebook --changes origin/$COMPARE_BRANCH recipes | ./tools/bin/build \
+ --recipes-dir $CI_PROJECT_DIR --artefacts-dir $BUILD_DIR --conda-build-image $CONDA_IMAGE \
+ --verbose --remove-container
+
+./tools/bin/recipebook --changes origin/$COMPARE_BRANCH red-recipes | ./tools/bin/build \
+ --recipes-dir $CI_PROJECT_DIR --artefacts-dir $BUILD_DIR --conda-build-image $CONDA_IMAGE \
+ --verbose --remove-container

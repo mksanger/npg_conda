@@ -2,8 +2,10 @@
 
 set -e -u -x
 
-rm -rf ~/tmp
-rm -rf ~/miniconda*
-if [ -e ~/.bashrc.bak ] ; then
-    mv ~/.bashrc.bak ~/.bashrc
+rm -rf $BUILD_DIR
+rm -rf $CHANNEL_DIR
+rm -rf $CONDA_DIR*
+
+if [ -e $CI_PROJECT_DIR/.bashrc.bak ] ; then
+    mv $CI_PROJECT_DIR/.bashrc.bak $CI_PROJECT_DIR/.bashrc
 fi
