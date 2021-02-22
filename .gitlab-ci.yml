@@ -16,6 +16,8 @@ before_script:
   
 setup:
   stage: .pre
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
   before_script:
     - cd $CI_PROJECT_DIR
@@ -25,18 +27,24 @@ setup:
     
 build:
   stage: build
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
   
   script:
     - scripts/gitlab_build.sh
     
 deploy:
   stage: deploy
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
   script:
     - scripts/gitlab_deploy.sh
 
 remove_files:
   stage: .post
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
 
   script:
     - scripts/gitlab_teardown.sh
